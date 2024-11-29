@@ -6,11 +6,10 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "declaration": true,
-    "declarationDir": "./dist",
-    "outDir": "./dist",
+    "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
@@ -18,10 +17,10 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
-    },
-    "emitDeclarationOnly": true
+      "@/*": ["src/*"],
+      "@kitchen-ai/core": ["packages/core/src"]
+    }
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
