@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import type { User, AuthError } from '@supabase/supabase-js';
+import type { SystemRole, OrganizationRole } from '@/types/auth';
 import toast from 'react-hot-toast';
 
 export function useAuth() {
@@ -36,7 +37,14 @@ export function useAuth() {
   // Check if user has dev system role
   const isDev = Boolean(
     user?.user_metadata?.system_role === 'dev' || 
-    user?.user_metadata?.role === 'dev'
+    user?.raw_user_meta_data?.system_role === 'dev'
+  );
+
+  // Check if user has admin access (isDev OR owner/admin org role)
+  const hasAdminAccess = Boolean(
+    isDev || 
+    user?.user_metadata?.role === 'owner' || 
+    user?.user_metadata?.role === 'admin'
   );
 
   const signOut = async () => {
@@ -52,7 +60,8 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    isDev,
+    isDev,           // System-level dev access
+    hasAdminAccess,  // Combined admin access check
     signOut
   };
 }
