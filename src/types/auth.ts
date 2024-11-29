@@ -13,6 +13,11 @@ export interface AuthUser {
   id: string;
   email: string;
   user_metadata: UserMetadata;
+  raw_user_meta_data?: {
+    system_role?: SystemRole;
+    role?: OrganizationRole;
+    [key: string]: any;
+  };
   app_metadata: {
     provider?: string;
     [key: string]: any;
