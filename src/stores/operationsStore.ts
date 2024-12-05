@@ -1,159 +1,122 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-interface OperationsSettings {
-  storageAreas: string[];
-  stations: string[];
-  shelfLife: string[];
-  batchUnits: string[];
-  prepCategories: string[];
-  ingredientCategories: string[];
-  ingredientSubCategories: string[];
-  volumeMeasures: string[];
-  weightMeasures: string[];
-  recipeUnits: string[];
-  storageContainers: string[];
-  containerTypes: string[];
-  vendors: string[];
-}
+import { supabase } from '@/lib/supabase';
+import type { OperationsSettings } from '@/types/operations';
+import toast from 'react-hot-toast';
 
 interface OperationsStore {
-  settings: OperationsSettings;
+  settings: OperationsSettings | null;
   isLoading: boolean;
-  updateSettings: (settings: OperationsSettings) => Promise<void>;
+  isSaving: boolean;
+  error: string | null;
+  fetchSettings: () => Promise<void>;
+  updateSettings: (settings: Partial<OperationsSettings>) => Promise<void>;
 }
 
-const DEFAULT_SETTINGS: OperationsSettings = {
-  storageAreas: [
-    'Walk-in Cooler',
-    'Walk-in Freezer',
-    'Dry Storage',
-    'Line Cooler',
-    'Prep Station'
-  ],
-  stations: [
-    'Grill',
-    'Sauté',
-    'Fry',
-    'Prep',
-    'Pantry',
-    'Pizza',
-    'Salad',
-    'Dessert'
-  ],
-  shelfLife: [
-    '1 Day',
-    '2 Days',
-    '3 Days',
-    '5 Days',
-    '1 Week',
-    '2 Weeks',
-    '1 Month'
-  ],
-  batchUnits: [
-    'Each',
-    'Batch',
-    'Recipe',
-    'Pan',
-    'Sheet',
-    'Container'
-  ],
-  prepCategories: [
-    'Sauces',
-    'Dressings',
-    'Marinades',
-    'Vegetables',
-    'Proteins',
-    'Starches'
-  ],
-  ingredientCategories: [
-    'Dairy',
-    'Protein',
-    'Dry Goods',
-    'Produce',
-    'Bakery',
-    'Beverages',
-    'Alcohol',
-    'Spices'
-  ],
-  ingredientSubCategories: [
-    'Fresh',
-    'Frozen',
-    'Canned',
-    'Dried',
-    'Processed',
-    'Raw'
-  ],
-  volumeMeasures: [
-    'mL',
-    'L',
-    'fl oz',
-    'cup',
-    'pint',
-    'quart',
-    'gallon'
-  ],
-  weightMeasures: [
-    'g',
-    'kg',
-    'oz',
-    'lb'
-  ],
-  recipeUnits: [
-    'portion',
-    'serving',
-    'each',
-    'dozen',
-    'batch'
-  ],
-  storageContainers: [
-    'Cambro',
-    'Hotel Pan',
-    'Lexan',
-    'Sheet Pan',
-    'Deli Container'
-  ],
-  containerTypes: [
-    '1/6 Pan',
-    '1/4 Pan',
-    '1/3 Pan',
-    '1/2 Pan',
-    'Full Pan',
-    '2 Qt',
-    '4 Qt',
-    '6 Qt',
-    '8 Qt',
-    '12 Qt',
-    '22 Qt'
-  ],
-  vendors: [
-    'US Foods',
-    'Sysco',
-    'Gordon Food Service',
-    'Performance Food Group'
-  ]
-};
+export const useOperationsStore = create<OperationsStore>((set) => ({
+  settings: null,
+  isLoading: false,
+  isSaving: false,
+  error: null,
 
-export const useOperationsStore = create<OperationsStore>()(
-  persist(
-    (set) => ({
-      settings: DEFAULT_SETTINGS,
-      isLoading: false,
-
-      updateSettings: async (newSettings) => {
-        set({ isLoading: true });
-        try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 500));
-          set({ settings: newSettings });
-        } finally {
-          set({ isLoading: false });
-        }
+  fetchSettings: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.user_metadata?.organizationId) {
+        throw new Error('No organization ID found');
       }
-    }),
-    {
-      name: 'operations-storage',
-      partialize: (state) => ({ settings: state.settings })
+
+      // First get operations settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('operations_settings')
+        .select('*')
+        .eq('organization_id', user.user_metadata.organizationId)
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
+
+      // Then get food relationships data
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('food_category_groups')
+        .select('*')
+        .eq('organization_id', user.user_metadata.organizationId)
+        .order('sort_order');
+
+      if (groupsError) throw groupsError;
+
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('food_categories')
+        .select('*')
+        .eq('organization_id', user.user_metadata.organizationId)
+        .order('sort_order');
+
+      if (categoriesError) throw categoriesError;
+
+      const { data: subCategoriesData, error: subCategoriesError } = await supabase
+        .from('food_sub_categories')
+        .select('*')
+        .eq('organization_id', user.user_metadata.organizationId)
+        .order('sort_order');
+
+      if (subCategoriesError) throw subCategoriesError;
+
+      // Combine all data
+      const settings: OperationsSettings = {
+        ...(settingsData || {}),
+        food_category_groups: groupsData || [],
+        food_categories: categoriesData || [],
+        food_sub_categories: subCategoriesData || [],
+        // Default values if no settings exist
+        storage_areas: settingsData?.storage_areas || ['Walk-in Cooler', 'Walk-in Freezer', 'Dry Storage'],
+        kitchen_stations: settingsData?.kitchen_stations || ['Grill', 'Prep', 'Line'],
+        shelf_life_options: settingsData?.shelf_life_options || ['1 Day', '3 Days', '1 Week'],
+        storage_containers: settingsData?.storage_containers || ['Cambro', 'Hotel Pan', 'Lexan'],
+        container_types: settingsData?.container_types || ['1/6 Pan', '1/3 Pan', 'Full Pan'],
+        vendors: settingsData?.vendors || ['US Foods', 'Sysco', 'Local Supplier']
+      };
+
+      set({ settings, error: null });
+    } catch (error) {
+      console.error('Error fetching operations settings:', error);
+      set({ error: 'Failed to load operations settings' });
+    } finally {
+      set({ isLoading: false });
     }
-  )
-);
+  },
+
+  updateSettings: async (updates) => {
+    set({ isSaving: true });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.user_metadata?.organizationId) {
+        throw new Error('No organization ID found');
+      }
+
+      const { error } = await supabase
+        .from('operations_settings')
+        .upsert({
+          organization_id: user.user_metadata.organizationId,
+          ...updates,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'organization_id'
+        });
+
+      if (error) throw error;
+
+      set(state => ({
+        settings: state.settings ? {
+          ...state.settings,
+          ...updates
+        } : updates as OperationsSettings
+      }));
+      
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      console.error('Error saving operations settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      set({ isSaving: false });
+    }
+  }
+}));
