@@ -80,44 +80,5 @@ export default {
       }
     },
   },
-  plugins: [
-    function({ addComponents }) {
-      addComponents({
-        '.tab': {
-          '@apply relative flex items-center gap-3 px-6 py-3 rounded-lg transition-colors text-sm font-medium': {},
-          '&:not(.active)': {
-            '@apply text-gray-400 hover:text-white hover:bg-gray-800/50': {},
-          },
-          '&.active': {
-            '@apply bg-gray-800 text-white': {},
-          },
-          '&::before': {
-            content: '""',
-            '@apply absolute -top-px left-0 right-0 h-1 rounded-full transition-opacity': {},
-          },
-          '&:not(.active)::before': {
-            '@apply opacity-0': {},
-          },
-          '&.active::before': {
-            '@apply opacity-100': {},
-          },
-          '&.primary::before': {
-            '@apply bg-primary-500': {},
-          },
-          '&.green::before': {
-            '@apply bg-green-500': {},
-          },
-          '&.amber::before': {
-            '@apply bg-amber-500': {},
-          },
-          '&.rose::before': {
-            '@apply bg-rose-500': {},
-          },
-          '&.purple::before': {
-            '@apply bg-purple-500': {},
-          },
-        },
-      });
-    },
-  ],
+  plugins: [],
 };
