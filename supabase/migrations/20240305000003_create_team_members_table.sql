@@ -57,7 +57,7 @@ CREATE POLICY "Users can view team members in their organization"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM organization_members
+      SELECT 1 FROM organization_roles
       WHERE organization_id = team_members.organization_id
       AND user_id = auth.uid()
     )
@@ -80,7 +80,7 @@ CREATE POLICY "Admins can manage team members"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM organization_members
+      SELECT 1 FROM organization_roles
       WHERE organization_id = team_members.organization_id
       AND user_id = auth.uid()
       AND role IN ('owner', 'admin')
@@ -94,7 +94,7 @@ CREATE POLICY "Users can view team member locations in their organization"
   USING (
     EXISTS (
       SELECT 1 FROM team_members tm
-      JOIN organization_members om ON om.organization_id = tm.organization_id
+      JOIN organization_roles om ON om.organization_id = tm.organization_id
       WHERE tm.id = team_member_locations.team_member_id
       AND om.user_id = auth.uid()
     )
@@ -106,7 +106,7 @@ CREATE POLICY "Admins can manage team member locations"
   USING (
     EXISTS (
       SELECT 1 FROM team_members tm
-      JOIN organization_members om ON om.organization_id = tm.organization_id
+      JOIN organization_roles om ON om.organization_id = tm.organization_id
       WHERE tm.id = team_member_locations.team_member_id
       AND om.user_id = auth.uid()
       AND om.role IN ('owner', 'admin')
