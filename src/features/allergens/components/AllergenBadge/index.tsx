@@ -1,62 +1,181 @@
 import React from 'react';
 import {
-  Wheat,
-  Fish,
-  Egg,
-  Milk,
   Nut,
-  Leaf,
-  AlertTriangle,
   Shell,
-  Citrus,
+  CircleDot,
+  Leaf,
+  Fish,
+  Wheat,
+  Milk,
+  AlertTriangle,
+  Egg,
   Flame,
+  Citrus,
   type LucideIcon
 } from 'lucide-react';
-
-export type AllergenType = 
-  | 'peanut' | 'crustacean' | 'treenut' | 'shellfish' | 'sesame'
-  | 'soy' | 'fish' | 'wheat' | 'milk' | 'sulphite' | 'egg'
-  | 'gluten' | 'mustard' | 'celery' | 'garlic' | 'onion'
-  | 'nitrite' | 'mushroom' | 'hot_pepper' | 'citrus' | 'pork';
+import type { AllergenType } from '../../types';
 
 interface AllergenBadgeProps {
   type: AllergenType;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
+  className?: string;
 }
 
 const ALLERGEN_CONFIG: Record<AllergenType, {
   icon: LucideIcon;
   label: string;
-  color: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
 }> = {
-  wheat: { icon: Wheat, label: 'Wheat', color: 'amber' },
-  fish: { icon: Fish, label: 'Fish', color: 'blue' },
-  egg: { icon: Egg, label: 'Egg', color: 'yellow' },
-  milk: { icon: Milk, label: 'Dairy', color: 'white' },
-  peanut: { icon: Nut, label: 'Peanut', color: 'orange' },
-  treenut: { icon: Nut, label: 'Tree Nut', color: 'brown' },
-  soy: { icon: Leaf, label: 'Soy', color: 'green' },
-  shellfish: { icon: Shell, label: 'Shellfish', color: 'red' },
-  crustacean: { icon: Shell, label: 'Crustacean', color: 'pink' },
-  sesame: { icon: AlertTriangle, label: 'Sesame', color: 'gray' },
-  sulphite: { icon: AlertTriangle, label: 'Sulphite', color: 'purple' },
-  mustard: { icon: AlertTriangle, label: 'Mustard', color: 'yellow' },
-  celery: { icon: Leaf, label: 'Celery', color: 'green' },
-  garlic: { icon: AlertTriangle, label: 'Garlic', color: 'purple' },
-  onion: { icon: AlertTriangle, label: 'Onion', color: 'red' },
-  nitrite: { icon: AlertTriangle, label: 'Nitrite', color: 'pink' },
-  mushroom: { icon: AlertTriangle, label: 'Mushroom', color: 'gray' },
-  hot_pepper: { icon: Flame, label: 'Hot Pepper', color: 'red' },
-  citrus: { icon: Citrus, label: 'Citrus', color: 'orange' },
-  gluten: { icon: Wheat, label: 'Gluten', color: 'amber' },
-  pork: { icon: AlertTriangle, label: 'Pork', color: 'rose' }
+  peanut: { 
+    icon: Nut, 
+    label: 'Peanuts',
+    bgColor: 'bg-orange-500/20',
+    textColor: 'text-orange-400',
+    borderColor: 'border-orange-500/50'
+  },
+  crustacean: { 
+    icon: Shell, 
+    label: 'Crustaceans',
+    bgColor: 'bg-rose-500/20',
+    textColor: 'text-rose-400',
+    borderColor: 'border-rose-500/50'
+  },
+  treenut: { 
+    icon: Nut, 
+    label: 'Tree Nuts',
+    bgColor: 'bg-amber-500/20',
+    textColor: 'text-amber-400',
+    borderColor: 'border-amber-500/50'
+  },
+  shellfish: { 
+    icon: Shell, 
+    label: 'Shellfish',
+    bgColor: 'bg-pink-500/20',
+    textColor: 'text-pink-400',
+    borderColor: 'border-pink-500/50'
+  },
+  sesame: { 
+    icon: CircleDot,
+    label: 'Sesame',
+    bgColor: 'bg-yellow-500/20',
+    textColor: 'text-yellow-400',
+    borderColor: 'border-yellow-500/50'
+  },
+  soy: { 
+    icon: Leaf, 
+    label: 'Soy',
+    bgColor: 'bg-green-500/20',
+    textColor: 'text-green-400',
+    borderColor: 'border-green-500/50'
+  },
+  fish: { 
+    icon: Fish, 
+    label: 'Fish',
+    bgColor: 'bg-blue-500/20',
+    textColor: 'text-blue-400',
+    borderColor: 'border-blue-500/50'
+  },
+  wheat: { 
+    icon: Wheat, 
+    label: 'Wheat',
+    bgColor: 'bg-amber-500/20',
+    textColor: 'text-amber-400',
+    borderColor: 'border-amber-500/50'
+  },
+  milk: { 
+    icon: Milk, 
+    label: 'Dairy',
+    bgColor: 'bg-cyan-500/20',
+    textColor: 'text-cyan-400',
+    borderColor: 'border-cyan-500/50'
+  },
+  sulphite: { 
+    icon: AlertTriangle, 
+    label: 'Sulphites',
+    bgColor: 'bg-purple-500/20',
+    textColor: 'text-purple-400',
+    borderColor: 'border-purple-500/50'
+  },
+  egg: { 
+    icon: Egg, 
+    label: 'Eggs',
+    bgColor: 'bg-yellow-500/20',
+    textColor: 'text-yellow-400',
+    borderColor: 'border-yellow-500/50'
+  },
+  gluten: { 
+    icon: Wheat, 
+    label: 'Gluten',
+    bgColor: 'bg-amber-500/20',
+    textColor: 'text-amber-400',
+    borderColor: 'border-amber-500/50'
+  },
+  mustard: { 
+    icon: AlertTriangle, 
+    label: 'Mustard',
+    bgColor: 'bg-yellow-500/20',
+    textColor: 'text-yellow-400',
+    borderColor: 'border-yellow-500/50'
+  },
+  celery: { 
+    icon: Leaf, 
+    label: 'Celery',
+    bgColor: 'bg-emerald-500/20',
+    textColor: 'text-emerald-400',
+    borderColor: 'border-emerald-500/50'
+  },
+  garlic: { 
+    icon: AlertTriangle, 
+    label: 'Garlic',
+    bgColor: 'bg-indigo-500/20',
+    textColor: 'text-indigo-400',
+    borderColor: 'border-indigo-500/50'
+  },
+  onion: { 
+    icon: AlertTriangle, 
+    label: 'Onion',
+    bgColor: 'bg-red-500/20',
+    textColor: 'text-red-400',
+    borderColor: 'border-red-500/50'
+  },
+  nitrite: { 
+    icon: AlertTriangle, 
+    label: 'Nitrites',
+    bgColor: 'bg-fuchsia-500/20',
+    textColor: 'text-fuchsia-400',
+    borderColor: 'border-fuchsia-500/50'
+  },
+  mushroom: { 
+    icon: AlertTriangle, 
+    label: 'Mushrooms',
+    bgColor: 'bg-stone-500/20',
+    textColor: 'text-stone-400',
+    borderColor: 'border-stone-500/50'
+  },
+  hot_peppers: { 
+    icon: Flame, 
+    label: 'Hot Peppers',
+    bgColor: 'bg-red-500/20',
+    textColor: 'text-red-400',
+    borderColor: 'border-red-500/50'
+  },
+  citrus: { 
+    icon: Citrus, 
+    label: 'Citrus',
+    bgColor: 'bg-orange-500/20',
+    textColor: 'text-orange-400',
+    borderColor: 'border-orange-500/50'
+  }
 };
 
 export const AllergenBadge: React.FC<AllergenBadgeProps> = ({ 
   type, 
   size = 'md',
-  showLabel = false 
+  showLabel = false,
+  className = ''
 }) => {
   const config = ALLERGEN_CONFIG[type];
   if (!config) {
@@ -73,13 +192,14 @@ export const AllergenBadge: React.FC<AllergenBadgeProps> = ({
   };
 
   return (
-    <div className="group relative inline-flex items-center">
+    <div className={`group relative inline-flex items-center ${className}`}>
       <div className={`
         ${sizeClasses[size]}
         rounded-full
         flex items-center justify-center
-        bg-${config.color}-500/20
-        text-${config.color}-400
+        ${config.bgColor}
+        ${config.textColor}
+        border ${config.borderColor}
         transition-transform
         hover:scale-110
         cursor-help
@@ -87,6 +207,12 @@ export const AllergenBadge: React.FC<AllergenBadgeProps> = ({
         <Icon className={size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'} />
       </div>
       
+      {showLabel && (
+        <span className={`ml-2 text-sm ${config.textColor}`}>
+          {config.label}
+        </span>
+      )}
+
       {/* Tooltip */}
       <div className="
         absolute bottom-full left-1/2 -translate-x-1/2 mb-2
@@ -101,12 +227,8 @@ export const AllergenBadge: React.FC<AllergenBadgeProps> = ({
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full
                       border-4 border-transparent border-t-gray-800" />
       </div>
-
-      {showLabel && (
-        <span className="ml-2 text-sm text-gray-300">
-          {config.label}
-        </span>
-      )}
     </div>
   );
 };
+
+export type { AllergenType };
