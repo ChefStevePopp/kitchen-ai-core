@@ -1,20 +1,37 @@
-export interface ExcelData {
-  id: string;
-  itemId: string;
-  productName: string;
+export * from './excel';
+export * from './inventory';
+
+export interface MasterIngredient {
+  id?: string;
+  uniqueId: string;
   category: string;
-  subCategory: string;
+  product: string;
   vendor: string;
+  subCategory: string;
   itemCode: string;
-  unitOfMeasure: string;
   caseSize: string;
   unitsPerCase: string;
-  price: number;
-  adjustedPrice: number;
+  currentPrice: number;
+  unitOfMeasure: string;
+  recipeUnitPerPurchaseUnit: number;
   yieldPercent: number;
+  costPerRecipeUnit: number;
+  imageUrl?: string;
+  storageArea?: string;
+  allergens?: string[];
+  allergenNotes?: string;
   lastUpdated: string;
-  image?: string;
 }
 
-export * from './recipe';
-export * from './supabase';
+export interface MasterIngredientsStore {
+  ingredients: MasterIngredient[];
+  isLoading: boolean;
+  isImporting: boolean;
+  fetchIngredients: () => Promise<void>;
+  addIngredient: (ingredient: Omit<MasterIngredient, 'id' | 'lastUpdated'>) => Promise<void>;
+  updateIngredient: (id: string, updates: Partial<MasterIngredient>) => Promise<void>;
+  deleteIngredient: (id: string) => Promise<void>;
+  importIngredients: (data: any[]) => Promise<void>;
+  clearIngredients: () => Promise<void>;
+  saveIngredients: () => Promise<void>;
+}
