@@ -1,18 +1,31 @@
 export interface InventoryItem {
   id: string;
-  name: string;
-  category: string;
+  masterIngredientId: string;
   quantity: number;
-  status: 'in-stock' | 'low-stock' | 'out-of-stock';
+  unitCost: number;
+  totalValue: number;
+  location?: string;
+  countedBy?: string;
+  notes?: string;
+  status: 'pending' | 'completed' | 'verified';
   lastUpdated: string;
+  ingredient?: {
+    uniqueId: string;
+    product: string;
+    category: string;
+    unitOfMeasure: string;
+    imageUrl?: string;
+  };
 }
 
 export interface InventoryStore {
   items: InventoryItem[];
   isLoading: boolean;
   error: string | null;
-  addItem: (item: Omit<InventoryItem, 'id' | 'lastUpdated'>) => void;
-  updateItem: (id: string, updates: Partial<InventoryItem>) => void;
-  deleteItem: (id: string) => void;
+  fetchItems: () => Promise<void>;
+  addItem: (item: Omit<InventoryItem, 'id' | 'lastUpdated'>) => Promise<void>;
+  updateItem: (id: string, updates: Partial<InventoryItem>) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
   importItems: (data: any[]) => Promise<void>;
+  clearItems: () => Promise<void>;
 }
