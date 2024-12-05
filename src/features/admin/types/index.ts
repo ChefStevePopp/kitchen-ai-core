@@ -1,35 +1,29 @@
-export interface Stats {
-  activeStaff: number;
-  lowStockItems: number;
-  pendingTasks: number;
-  prepCompletion: number;
+import { type ReactNode } from 'react';
+
+export interface AdminModuleRoute {
+  path: string;
+  element: ReactNode;
 }
 
-export interface Activity {
+export interface AdminModule {
   id: string;
-  type: 'recipe' | 'inventory' | 'team' | 'system';
-  message: string;
-  user: string;
-  timestamp: string;
+  name: string;
+  description?: string;
+  version: string;
+  icon?: React.ComponentType;
+  routes: AdminModuleRoute[];
+  navigationItems?: {
+    label: string;
+    path: string;
+    icon?: React.ComponentType;
+  }[];
+  settings?: {
+    label: string;
+    component: React.ComponentType;
+  }[];
 }
 
-export interface Alert {
-  id: string;
-  type: 'critical' | 'warning' | 'info';
-  message: string;
-  details: string;
-  timestamp: string;
-}
-
-export interface AdminStore {
-  stats: Stats;
-  activities: Activity[];
-  alerts: Alert[];
-  calendarFeedUrl: string | null;
-  defaultRecipeImage: string;
-  setStats: (stats: Stats) => void;
-  addActivity: (activity: Activity) => void;
-  addAlert: (alert: Alert) => void;
-  setCalendarFeedUrl: (url: string) => void;
-  setDefaultRecipeImage: (url: string) => void;
+export interface ModuleRegistration {
+  module: AdminModule;
+  enabled: boolean;
 }
