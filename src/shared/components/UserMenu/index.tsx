@@ -1,26 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  User,
-  Building2, 
-  Users, 
-  Clock,
-  FileText,
-  HelpCircle,
-  Share2,
-  Shield,
-  LogOut
-} from 'lucide-react';
+import { User, Settings, LogOut, Building2, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useDevAccess } from '@/hooks/useDevAccess';
 import { ROUTES } from '@/config/routes';
-import toast from 'react-hot-toast';
 
 export const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { user, signOut } = useAuth();
-  const { isDev } = useDevAccess();
+  const { user, displayName, isDev, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,31 +26,12 @@ export const UserMenu: React.FC = () => {
       await signOut();
       navigate(ROUTES.AUTH.SIGN_IN);
     } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
+      // Error is already handled by useAuth hook
+      console.debug('Sign out error handled by useAuth');
     }
   };
 
   if (!user) return null;
-
-  // Get display name from user metadata
-  const firstName = user?.user_metadata?.firstName || user?.email?.split('@')[0] || 'User';
-
-  const menuItems = [
-    { icon: User, label: 'My Account', path: ROUTES.ADMIN.MY_ACCOUNT },
-    { divider: true },
-    { icon: Building2, label: 'Organization', path: ROUTES.ADMIN.ORGANIZATIONS },
-    { icon: Users, label: 'Team', path: ROUTES.ADMIN.TEAM },
-    { icon: Clock, label: 'Locations', path: ROUTES.ADMIN.LOCATIONS },
-    { divider: true },
-    { icon: FileText, label: 'Activity Log', path: ROUTES.ADMIN.ACTIVITY },
-    { icon: HelpCircle, label: 'Help & Support', path: ROUTES.ADMIN.HELP },
-    { icon: Share2, label: 'Refer a Friend', path: ROUTES.ADMIN.REFER },
-    ...(isDev ? [
-      { divider: true },
-      { icon: Shield, label: 'Dev Management', path: ROUTES.ADMIN.DEV_MANAGEMENT }
-    ] : [])
-  ];
 
   return (
     <div className="relative z-[110]" ref={menuRef}>
@@ -75,9 +43,11 @@ export const UserMenu: React.FC = () => {
           <User className="w-5 h-5 text-primary-400" />
         </div>
         <div className="text-left">
-          <p className="text-sm font-medium text-white">{firstName}</p>
+          <p className="text-sm font-medium text-white">
+            {displayName || user.email?.split('@')[0]}
+          </p>
           <p className="text-xs text-gray-400">
-            {isDev ? 'Developer' : 'Organization Admin'}
+            {isDev ? 'Developer' : 'Organization Owner'}
           </p>
         </div>
       </button>
@@ -99,20 +69,33 @@ export const UserMenu: React.FC = () => {
 
             <div className="border-t border-gray-700 my-2" />
 
-            {menuItems.map((item, index) => 
-              item.divider ? (
-                <div key={`divider-${index}`} className="border-t border-gray-700 my-2" />
-              ) : (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </Link>
-              )
+            <Link
+              to={ROUTES.ADMIN.SETTINGS}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </Link>
+
+            <Link
+              to={ROUTES.ADMIN.ORGANIZATIONS}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <Building2 className="w-4 h-4" />
+              Organizations
+            </Link>
+
+            {isDev && (
+              <Link
+                to="/admin/dev-management"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-primary-400 hover:text-primary-300 hover:bg-primary-500/10 rounded-lg transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Shield className="w-4 h-4" />
+                Dev Management
+              </Link>
             )}
 
             <div className="border-t border-gray-700 my-2" />
