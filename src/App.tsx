@@ -6,53 +6,61 @@ import { SignUp } from '@/features/auth/components/SignUp';
 import { PrivateRoute } from '@/components/PrivateRoute';
 import { ROUTES } from '@/config/routes';
 import { AdminRoutes } from '@/features/admin/routes';
+import { KitchenRoutes } from '@/features/kitchen/routes';
 import { LoadingLogo } from '@/features/shared/components';
-import { useAuth } from '@/hooks/useAuth';
-
-// Feature Components
-import { KitchenDashboard } from '@/features/kitchen/components/KitchenDashboard';
-import { InventoryControl } from '@/features/inventory/components';
-import { RecipeManager } from '@/features/recipes/components';
-import { ProductionBoard } from '@/features/production/components';
+import { useAuthStore } from '@/stores/authStore';
+import { Toaster } from 'react-hot-toast';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { NetworkStatus } from '@/components/NetworkStatus';
 
 function App() {
-  const { isLoading, user } = useAuth();
+  const { isLoading } = useAuthStore();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <LoadingLogo message="Loading KITCHEN AI..." />
+        <LoadingLogo message="Loading..." />
       </div>
     );
   }
 
   return (
-    <Routes>
-      {/* Auth Routes */}
-      <Route path="/auth/*" element={<AuthLayout />}>
-        <Route path="signin" element={<SignIn />} />
-        <Route path="signup" element={<SignUp />} />
-      </Route>
+    <ErrorBoundary>
+      <>
+        <Routes>
+          {/* Auth Routes */}
+          <Route path="/auth/*" element={<AuthLayout />}>
+            <Route path="signin" element={<SignIn />} />
+            <Route path="signup" element={<SignUp />} />
+          </Route>
 
-      {/* Protected Kitchen Routes */}
-      <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
-        <Route path="/kitchen" element={<KitchenDashboard />} />
-        <Route path="/kitchen/inventory" element={<InventoryControl />} />
-        <Route path="/kitchen/recipes" element={<RecipeManager />} />
-        <Route path="/kitchen/production" element={<ProductionBoard />} />
-      </Route>
+          {/* Protected Kitchen Routes */}
+          <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
+            <Route path="/kitchen/*" element={<KitchenRoutes />} />
+          </Route>
 
-      {/* Admin Routes - Protected but accessible to all authenticated users */}
-      <Route path="/admin/*" element={<PrivateRoute><AdminRoutes /></PrivateRoute>} />
+          {/* Admin Routes */}
+          <Route path="/admin/*" element={<PrivateRoute><AdminRoutes /></PrivateRoute>} />
 
-      {/* Default Routes */}
-      <Route path="/" element={
-        user ? <Navigate to="/kitchen" replace /> : <Navigate to="/auth/signin" replace />
-      } />
-      <Route path="*" element={
-        <Navigate to={user ? "/kitchen" : "/auth/signin"} replace />
-      } />
-    </Routes>
+          {/* Default Routes */}
+          <Route path="/" element={
+            <Navigate to={ROUTES.KITCHEN.DASHBOARD} replace />
+          } />
+          <Route path="*" element={
+            <Navigate to={ROUTES.KITCHEN.DASHBOARD} replace />
+          } />
+        </Routes>
+
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            className: 'bg-gray-800 text-white',
+            duration: 3000,
+          }}
+        />
+        <NetworkStatus />
+      </>
+    </ErrorBoundary>
   );
 }
 
