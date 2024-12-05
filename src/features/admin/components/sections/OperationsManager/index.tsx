@@ -1,212 +1,193 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Building2, 
-  ListPlus, 
-  Save, 
-  Trash2, 
-  Plus,
-  RefreshCw
+  Ruler, Tags, Building2, Plus, AlertTriangle,
+  Archive, Scale, Store, FolderPlus
 } from 'lucide-react';
 import { useOperationsStore } from '@/stores/operationsStore';
+import { AddSubCategoryModal } from './AddSubCategoryModal';
+import { SettingsManager } from './SettingsManager';
 import toast from 'react-hot-toast';
 
-type ConfigCategory = {
-  id: string;
-  name: string;
-  items: string[];
-};
+// Category group definitions with icons and colors
+const CATEGORY_GROUPS = [
+  { 
+    id: 'measurements',
+    name: 'Measurements',
+    icon: Scale,
+    color: 'primary',
+    description: 'Configure measurement units for recipes and inventory',
+    categories: [
+      { id: 'alcohol_measures', label: 'Alcohol Measures' },
+      { id: 'volume_measures', label: 'Volume Measures' },
+      { id: 'weight_measures', label: 'Weight Measures' },
+      { id: 'dry_goods_measures', label: 'Dry Goods Measures' },
+      { id: 'recipe_unit_measures', label: 'Recipe Unit Measures' },
+      { id: 'protein_measures', label: 'Protein Measures' },
+      { id: 'batch_units', label: 'Batch Units' }
+    ]
+  },
+  {
+    id: 'storage',
+    name: 'Storage and Location',
+    icon: Archive,
+    color: 'green',
+    description: 'Manage storage locations and container types',
+    categories: [
+      { id: 'storage_areas', label: 'Storage Areas' },
+      { id: 'storage_containers', label: 'Storage Containers' },
+      { id: 'container_types', label: 'Container Types' },
+      { id: 'shelf_life_options', label: 'Shelf Life Options' }
+    ]
+  },
+  {
+    id: 'categories',
+    name: 'Categories',
+    icon: Tags,
+    color: 'amber',
+    description: 'Define mise en place categories',
+    categories: [
+      { id: 'mise_en_place_categories', label: 'Mise en Place Categories' }
+    ]
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    icon: Store,
+    color: 'rose',
+    description: 'Configure business-related settings',
+    categories: [
+      { id: 'revenue_channels', label: 'Revenue Channels' },
+      { id: 'pos_major_groups', label: 'POS Major Groups' },
+      { id: 'pos_family_groups', label: 'POS Family Groups' },
+      { id: 'vendors', label: 'Vendors' }
+    ]
+  }
+] as const;
 
 export const OperationsManager: React.FC = () => {
-  const { 
-    settings,
-    updateSettings,
-    isLoading
-  } = useOperationsStore();
+  const [activeGroup, setActiveGroup] = useState<string>('measurements');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [isAddingSubCategory, setIsAddingSubCategory] = useState(false);
+  
+  const { settings, isLoading, updateSettings, fetchSettings } = useOperationsStore();
 
-  const [activeCategory, setActiveCategory] = useState('storageAreas');
-  const [newItemValue, setNewItemValue] = useState('');
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
-  const configCategories: Record<string, ConfigCategory> = {
-    storageAreas: {
-      id: 'storageAreas',
-      name: 'Storage Areas',
-      items: settings.storageAreas
-    },
-    stations: {
-      id: 'stations',
-      name: 'Kitchen Stations',
-      items: settings.stations
-    },
-    shelfLife: {
-      id: 'shelfLife',
-      name: 'Shelf Life Options',
-      items: settings.shelfLife
-    },
-    batchUnits: {
-      id: 'batchUnits',
-      name: 'Batch Units',
-      items: settings.batchUnits
-    },
-    prepCategories: {
-      id: 'prepCategories',
-      name: 'Prep Categories',
-      items: settings.prepCategories
-    },
-    ingredientCategories: {
-      id: 'ingredientCategories',
-      name: 'Ingredient Categories',
-      items: settings.ingredientCategories
-    },
-    ingredientSubCategories: {
-      id: 'ingredientSubCategories',
-      name: 'Ingredient Sub-Categories',
-      items: settings.ingredientSubCategories
-    },
-    volumeMeasures: {
-      id: 'volumeMeasures',
-      name: 'Volume Measures',
-      items: settings.volumeMeasures
-    },
-    weightMeasures: {
-      id: 'weightMeasures',
-      name: 'Weight Measures',
-      items: settings.weightMeasures
-    },
-    recipeUnits: {
-      id: 'recipeUnits',
-      name: 'Recipe Units',
-      items: settings.recipeUnits
-    },
-    storageContainers: {
-      id: 'storageContainers',
-      name: 'Storage Containers',
-      items: settings.storageContainers
-    },
-    containerTypes: {
-      id: 'containerTypes',
-      name: 'Container Types',
-      items: settings.containerTypes
-    },
-    vendors: {
-      id: 'vendors',
-      name: 'Vendors',
-      items: settings.vendors
+  useEffect(() => {
+    if (!activeCategory && settings) {
+      const firstCategory = CATEGORY_GROUPS.find(g => g.id === activeGroup)?.categories[0].id;
+      setActiveCategory(firstCategory || null);
     }
-  };
+  }, [settings, activeCategory, activeGroup]);
 
-  const handleAddItem = () => {
-    if (!newItemValue.trim()) return;
+  const handleAddItem = async (name: string) => {
+    if (!activeCategory || !settings) return;
 
-    const category = configCategories[activeCategory];
-    const updatedItems = [...category.items, newItemValue.trim()];
-
-    updateSettings({
+    // Handle regular categories
+    const currentItems = settings[activeCategory as keyof typeof settings] || [];
+    const updatedSettings = {
       ...settings,
-      [activeCategory]: updatedItems
-    });
+      [activeCategory]: [...currentItems, name]
+    };
 
-    setNewItemValue('');
-    toast.success(`Added new ${category.name.slice(0, -1)}`);
+    await updateSettings(updatedSettings);
+    toast.success('Item added successfully');
   };
 
-  const handleRemoveItem = (index: number) => {
-    const category = configCategories[activeCategory];
-    const updatedItems = category.items.filter((_, i) => i !== index);
-
-    updateSettings({
-      ...settings,
-      [activeCategory]: updatedItems
-    });
-
-    toast.success(`Removed ${category.name.slice(0, -1)}`);
-  };
+  const currentGroup = CATEGORY_GROUPS.find(g => g.id === activeGroup);
 
   return (
     <div className="space-y-6">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/admin/components/sections/OperationsManager/index.tsx
+      </div>
+
       <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Data Management</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Operations Manager</h1>
           <p className="text-gray-400">Configure system-wide lookup values and master lists</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Categories Sidebar */}
-        <div className="lg:col-span-1 space-y-2">
-          {Object.values(configCategories).map((category) => (
+      {/* Category Group Tabs */}
+      <div className="flex gap-2">
+        {CATEGORY_GROUPS.map((group) => {
+          const Icon = group.icon;
+          return (
             <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                activeCategory === category.id
-                  ? 'bg-primary-500/20 text-white'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              }`}
+              key={group.id}
+              onClick={() => {
+                setActiveGroup(group.id);
+                setActiveCategory(group.categories[0].id);
+              }}
+              className={`tab ${group.color} ${activeGroup === group.id ? 'active' : ''}`}
             >
-              {category.name}
-              <span className="float-right text-sm">
-                {category.items.length}
-              </span>
+              <Icon className={`w-5 h-5 ${
+                activeGroup === group.id ? `text-${group.color}-400` : 'text-current'
+              }`} />
+              {group.name}
             </button>
-          ))}
+          );
+        })}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Categories Sidebar */}
+        <div className="col-span-3">
+          <div className="bg-gray-800 rounded-xl p-4">
+            <h3 className="text-xl font-bold text-white mb-4">Categories</h3>
+            
+            <div className="space-y-2">
+              {currentGroup?.categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`p-3 rounded-lg transition-colors w-full text-left ${
+                    activeCategory === category.id
+                      ? 'bg-primary-500/20 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {category.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Add Category Button */}
+            <button
+              onClick={() => setIsAddingSubCategory(true)}
+              className="w-full mt-4 btn-ghost text-gray-300 hover:text-white py-2 px-4 rounded-lg"
+            >
+              <FolderPlus className="w-4 h-4 inline-block mr-2" />
+              Add Category
+            </button>
+          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="lg:col-span-3">
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">
-                {configCategories[activeCategory].name}
-              </h2>
-              <div className="flex gap-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newItemValue}
-                    onChange={(e) => setNewItemValue(e.target.value)}
-                    placeholder={`Add new ${configCategories[activeCategory].name.toLowerCase().slice(0, -1)}...`}
-                    className="input"
-                  />
-                  <button
-                    onClick={handleAddItem}
-                    disabled={!newItemValue.trim()}
-                    className="btn-primary"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Add
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {configCategories[activeCategory].items.length === 0 ? (
-                <div className="text-center py-12">
-                  <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400">
-                    No items added yet. Add your first {configCategories[activeCategory].name.toLowerCase().slice(0, -1)}.
-                  </p>
-                </div>
-              ) : (
-                configCategories[activeCategory].items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg group hover:bg-gray-800"
-                  >
-                    <span className="text-gray-300">{item}</span>
-                    <button
-                      onClick={() => handleRemoveItem(index)}
-                      className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* Main Content Area */}
+        <div className="col-span-9">
+          <div className="bg-gray-800 rounded-xl p-6">
+            <SettingsManager 
+              group={currentGroup!}
+              activeCategory={activeCategory}
+              settings={settings}
+              onAddItem={handleAddItem}
+            />
           </div>
         </div>
       </div>
+
+      {/* Add Sub-Category Modal */}
+      <AddSubCategoryModal
+        isOpen={isAddingSubCategory}
+        onClose={() => setIsAddingSubCategory(false)}
+        groupName={activeCategory ? currentGroup?.categories.find(c => c.id === activeCategory)?.label || 'Item' : 'Item'}
+        onAdd={handleAddItem}
+      />
     </div>
   );
 };
