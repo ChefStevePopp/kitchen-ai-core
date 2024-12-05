@@ -11,7 +11,11 @@ interface ImportTeamModalProps {
   onImport: (data: any[]) => Promise<void>;
 }
 
-export function ImportTeamModal({ isOpen, onClose, onImport }: ImportTeamModalProps) {
+export const ImportTeamModal: React.FC<ImportTeamModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onImport 
+}) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
 
@@ -32,19 +36,15 @@ export function ImportTeamModal({ isOpen, onClose, onImport }: ImportTeamModalPr
     setIsProcessing(true);
     setPreviewData(null);
 
-    // Verify file type and encoding
     if (!file.name.endsWith('.csv')) {
       toast.error('Please upload a CSV file');
       setIsProcessing(false);
       return;
     }
 
-    // Use FileReader with UTF-8 encoding
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      
-      // Check for UTF-8 BOM
       const hasBOM = text.charCodeAt(0) === 0xFEFF;
       const content = hasBOM ? text.slice(1) : text;
 
@@ -92,7 +92,7 @@ export function ImportTeamModal({ isOpen, onClose, onImport }: ImportTeamModalPr
         },
         error: (error) => {
           console.error('Error parsing CSV:', error);
-          toast.error('Failed to read CSV file. Please ensure it\'s a valid UTF-8 encoded CSV file.');
+          toast.error('Failed to read CSV file');
           setPreviewData(null);
           setIsProcessing(false);
         }
@@ -100,7 +100,7 @@ export function ImportTeamModal({ isOpen, onClose, onImport }: ImportTeamModalPr
     };
 
     reader.onerror = () => {
-      toast.error('Error reading file. Please ensure it\'s a valid UTF-8 encoded CSV file.');
+      toast.error('Error reading file');
       setIsProcessing(false);
     };
 
@@ -230,4 +230,4 @@ export function ImportTeamModal({ isOpen, onClose, onImport }: ImportTeamModalPr
       </div>
     </div>
   );
-}
+};
