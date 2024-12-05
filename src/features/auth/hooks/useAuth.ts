@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { User, AuthError, Session } from '@supabase/supabase-js';
+import type { User, AuthError } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
 
@@ -28,74 +33,40 @@ export function useAuth() {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+  // Get display name from metadata
+  const displayName = user ? `${user.user_metadata?.firstName || ''} ${user.user_metadata?.lastName || ''}`.trim() : '';
 
-      if (error) throw error;
+  // Check if user has dev system role
+  const isDev = Boolean(
+    user?.user_metadata?.system_role === 'dev' || 
+    user?.user_metadata?.role === 'dev' ||
+    user?.raw_user_meta_data?.system_role === 'dev' ||
+    user?.raw_user_meta_data?.role === 'dev'
+  );
 
-      // After successful sign in, get full user data including metadata
-      if (data.user) {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
-        setUser(userData.user);
-      }
-
-      return { data, error: null };
-    } catch (error) {
-      console.error('Sign in error:', error);
-      const authError = error as AuthError;
-      return { data: null, error: authError };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signUp = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Sign up error:', error);
-      const authError = error as AuthError;
-      return { data: null, error: authError };
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Check if user has admin access (isDev OR owner/admin org role)
+  const hasAdminAccess = Boolean(
+    isDev || 
+    user?.user_metadata?.role === 'owner' || 
+    user?.user_metadata?.role === 'admin'
+  );
 
   const signOut = async () => {
     try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
       toast.success('Signed out successfully');
     } catch (error) {
       console.error('Sign out error:', error);
-      const authError = error as AuthError;
-      toast.error(authError.message);
-    } finally {
-      setIsLoading(false);
+      toast.error('Failed to sign out');
     }
   };
 
   return {
     user,
-    session,
+    displayName,
     isLoading,
-    signIn,
-    signUp,
-    signOut,
-    isDev: user?.user_metadata?.system_role === 'dev'
+    isDev,
+    hasAdminAccess,
+    signOut
   };
 }
