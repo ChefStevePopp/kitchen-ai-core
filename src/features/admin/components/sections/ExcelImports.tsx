@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { FileSpreadsheet, Database, UtensilsCrossed, Package } from 'lucide-react';
+import { FileSpreadsheet, Database, UtensilsCrossed, Package, Settings, Box } from 'lucide-react';
 import { MasterIngredientList } from './recipe/MasterIngredientList';
-import { PreparedItemsManagement } from './PreparedItemsManagement';
+import { PreparedItemsManagement } from './PreparedItems/PreparedItemsManagement';
 import { InventoryManagement } from './InventoryManagement';
+import { OperationsManager } from './OperationsManager';
+import { FoodRelationshipsManager } from './FoodRelationshipsManager';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export const ExcelImports: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'ingredients' | 'prepared' | 'inventory'>('ingredients');
+  const [activeTab, setActiveTab] = useState<'ingredients' | 'prepared' | 'inventory' | 'operations' | 'relationships'>('ingredients');
 
   // Sync tab state with URL hash
   useEffect(() => {
-    const hash = location.hash.replace('#', '') as 'ingredients' | 'prepared' | 'inventory';
-    if (hash && ['ingredients', 'prepared', 'inventory'].includes(hash)) {
+    const hash = location.hash.replace('#', '') as 'ingredients' | 'prepared' | 'inventory' | 'operations' | 'relationships';
+    if (hash && ['ingredients', 'prepared', 'inventory', 'operations', 'relationships'].includes(hash)) {
       setActiveTab(hash);
     } else {
       // Set default hash if none exists
@@ -44,14 +46,31 @@ export const ExcelImports: React.FC = () => {
       label: 'Food Inventory',
       icon: Package,
       color: 'amber'
+    },
+    {
+      id: 'operations' as const,
+      label: 'Operations',
+      icon: Settings,
+      color: 'rose'
+    },
+    {
+      id: 'relationships' as const,
+      label: 'Food Relationships',
+      icon: Box,
+      color: 'purple'
     }
   ] as const;
 
   return (
     <div className="space-y-6">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/admin/components/sections/ExcelImports.tsx
+      </div>
+
       <header className="flex items-center gap-4">
         <FileSpreadsheet className="w-8 h-8 text-primary-400" />
-        <h1 className="text-3xl font-bold text-white">Excel Imports</h1>
+        <h1 className="text-3xl font-bold text-white">Data Management</h1>
       </header>
 
       {/* Standardized Tab Navigation */}
@@ -75,6 +94,8 @@ export const ExcelImports: React.FC = () => {
         {activeTab === 'ingredients' && <MasterIngredientList />}
         {activeTab === 'prepared' && <PreparedItemsManagement />}
         {activeTab === 'inventory' && <InventoryManagement />}
+        {activeTab === 'operations' && <OperationsManager />}
+        {activeTab === 'relationships' && <FoodRelationshipsManager />}
       </div>
     </div>
   );
