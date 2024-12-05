@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/config/routes';
-import toast from 'react-hot-toast';
 
 export const SignIn: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -11,6 +10,7 @@ export const SignIn: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,21 +18,10 @@ export const SignIn: React.FC = () => {
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim()
-      });
-
-      if (error) throw error;
-
-      if (data?.user) {
-        toast.success('Signed in successfully');
-        navigate(ROUTES.KITCHEN.DASHBOARD);
-      }
-    } catch (err: any) {
-      console.error('Sign in error:', err);
+      await signIn(email, password);
+      navigate(ROUTES.KITCHEN.DASHBOARD);
+    } catch (error) {
       setError('Invalid email or password');
-      toast.error('Failed to sign in');
     } finally {
       setIsLoading(false);
     }
