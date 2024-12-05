@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Users, Plus, Search, Upload, FileSpreadsheet, Settings } from 'lucide-react';
-import { useTeamStore } from '../../stores/teamStore';
+import React, { useState, useEffect } from 'react';
+import { Users, Plus, Search, Upload, FileSpreadsheet, Settings, Save, Trash2, RefreshCw, ArrowUpDown } from 'lucide-react';
+import { useTeamStore } from '@/stores/teamStore';
 import { EditTeamMemberModal } from '../EditTeamMemberModal';
 import { ImportTeamModal } from '../ImportTeamModal';
 import { CreateTeamMemberModal } from '../CreateTeamMemberModal';
@@ -9,6 +9,11 @@ import { ROUTES } from '@/config/routes';
 import type { TeamMemberData } from '../../types';
 import toast from 'react-hot-toast';
 
+type SortConfig = {
+  key: keyof TeamMemberData | '';
+  direction: 'asc' | 'desc';
+};
+
 export const TeamManagement: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -16,46 +21,180 @@ export const TeamManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [importType, setImportType] = useState<'7shifts' | 'excel' | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' });
   
-  const { members, importTeam } = useTeamStore();
+  const { 
+    members, 
+    importTeam, 
+    fetchTeamMembers, 
+    clearTeam, 
+    saveTeam, 
+    isLoading,
+    error,
+    deleteMember
+  } = useTeamStore();
+
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        await fetchTeamMembers();
+      } catch (error) {
+        // Error handling is done in the store
+      }
+    };
+    loadTeamMembers();
+  }, [fetchTeamMembers]);
+
+  const handleSort = (key: keyof TeamMemberData) => {
+    setSortConfig(current => ({
+      key,
+      direction: 
+        current.key === key && current.direction === 'asc' 
+          ? 'desc' 
+          : 'asc'
+    }));
+  };
 
   const handleImport = async (data: any[]) => {
     try {
       await importTeam(data);
-      toast.success('Team data imported successfully');
       setIsImportModalOpen(false);
       setImportType(null);
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Failed to import team data');
+      // Error handling is done in the store
+    }
+  };
+
+  const handleClearData = async () => {
+    try {
+      await clearTeam();
+    } catch (error) {
+      // Error handling is done in the store
+    }
+  };
+
+  const handleSaveData = async () => {
+    try {
+      await saveTeam();
+    } catch (error) {
+      // Error handling is done in the store
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      try {
+        await deleteMember(id);
+      } catch (error) {
+        toast.error('Failed to delete team member');
       }
     }
   };
 
-  // Filter members based on search and role
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = (
-      member.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.roles.some(role => role.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Filter and sort members
+  const sortedAndFilteredMembers = React.useMemo(() => {
+    let filtered = members.filter(member => {
+      const matchesSearch = (
+        member.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.roles.some(role => role.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+
+      const matchesRole = roleFilter === 'all' || member.roles.includes(roleFilter);
+
+      return matchesSearch && matchesRole;
+    });
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Handle array values (like roles, departments)
+        if (Array.isArray(aValue)) aValue = aValue.join(', ');
+        if (Array.isArray(bValue)) bValue = bValue.join(', ');
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [members, searchTerm, roleFilter, sortConfig]);
+
+  // Get unique roles for filtering
+  const roles = Array.from(new Set(members.flatMap(m => m.roles))).sort();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <RefreshCw className="w-12 h-12 text-primary-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading team members...</p>
+        </div>
+      </div>
     );
+  }
 
-    const matchesRole = roleFilter === 'all' || member.roles.includes(roleFilter);
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <Users className="w-6 h-6 text-red-400" />
+          </div>
+          <p className="text-red-400 mb-4">{error}</p>
+          <button 
+            onClick={() => fetchTeamMembers()}
+            className="btn-ghost text-primary-400"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-    return matchesSearch && matchesRole;
-  });
+  const SortIcon = ({ column }: { column: keyof TeamMemberData }) => (
+    <ArrowUpDown 
+      className={`w-4 h-4 inline-block ml-1 cursor-pointer transition-colors
+        ${sortConfig.key === column ? 'text-primary-400' : 'text-gray-400'}`}
+      onClick={() => handleSort(column)}
+    />
+  );
 
   return (
     <div className="space-y-6">
-      <header className="flex justify-between items-center relative z-50">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/team/components/TeamManagement/index.tsx
+      </div>
+
+      <header className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Team Management</h1>
           <p className="text-gray-400">Manage your team members and import data from various sources</p>
         </div>
         <div className="flex gap-4">
+          <button
+            onClick={handleClearData}
+            className="btn-ghost text-red-400 hover:text-red-300"
+            disabled={members.length === 0}
+          >
+            <Trash2 className="w-5 h-5 mr-2" />
+            Clear Data
+          </button>
+          <button
+            onClick={handleSaveData}
+            className="btn-ghost text-green-400 hover:text-green-300"
+            disabled={members.length === 0}
+          >
+            <Save className="w-5 h-5 mr-2" />
+            Save Data
+          </button>
           <div className="relative group">
             <button
               onClick={() => setIsImportModalOpen(true)}
@@ -99,7 +238,7 @@ export const TeamManagement: React.FC = () => {
 
       {/* Import Instructions Card */}
       {members.length === 0 && (
-        <div className="card p-6 relative z-10 mt-36">
+        <div className="card p-6 relative z-10">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center flex-shrink-0">
               <Upload className="w-6 h-6 text-primary-400" />
@@ -154,26 +293,38 @@ export const TeamManagement: React.FC = () => {
             className="input w-48"
           >
             <option value="all">All Roles</option>
-            {Array.from(new Set(members.flatMap(m => m.roles))).map(role => (
+            {roles.map(role => (
               <option key={role} value={role}>{role}</option>
             ))}
           </select>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-separate border-spacing-0">
+          <table className="w-full">
             <thead>
               <tr className="text-left text-gray-400">
-                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[300px]">Name</th>
-                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[200px]">ID</th>
-                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[250px]">Roles</th>
-                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[250px]">Departments</th>
-                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[250px]">Contact</th>
-                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[100px]">Actions</th>
+                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[300px]">
+                  Name <SortIcon column="firstName" />
+                </th>
+                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[200px]">
+                  Punch ID <SortIcon column="punchId" />
+                </th>
+                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[250px]">
+                  Roles
+                </th>
+                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[250px]">
+                  Departments
+                </th>
+                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[250px]">
+                  Contact <SortIcon column="email" />
+                </th>
+                <th className="sticky top-0 bg-gray-900/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-700 w-[150px]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
-              {filteredMembers.map((member) => (
+              {sortedAndFilteredMembers.map((member) => (
                 <tr key={member.id} className="border-b border-gray-700 hover:bg-gray-800/50">
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
@@ -231,17 +382,32 @@ export const TeamManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <button
-                      onClick={() => setEditingMember(member)}
-                      className="btn-ghost px-4 py-2"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditingMember(member)}
+                        className="btn-ghost px-3 py-1.5 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(member.id, `${member.firstName} ${member.lastName}`)}
+                        className="btn-ghost px-2 py-1.5 text-sm text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {sortedAndFilteredMembers.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-400">No team members found</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -253,7 +419,6 @@ export const TeamManagement: React.FC = () => {
           setImportType(null);
         }}
         onImport={handleImport}
-        importType={importType}
       />
 
       <CreateTeamMemberModal
